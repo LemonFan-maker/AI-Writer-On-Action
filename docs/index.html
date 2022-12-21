@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script>
+        var _hmt = _hmt || [];
+        (function () {
+            var hm = document.createElement("script");
+            hm.src = "https://hm.baidu.com/hm.js?1e834a9b11dc71db3d0ae4cbb885253d";
+            var s = document.getElementsByTagName("script")[0];
+            s.parentNode.insertBefore(hm, s);
+        })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs/dist/tf.min.js"> </script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm/dist/tf-backend-wasm.js"></script>
+    <script>
+        tf.setBackend('wasm');
+    </script>
+</head>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>AI智障写作</title>
+</head>
+<style>
+    * {
+        margin: 0px;
+        padding: 0px;
+    }
+
+    body {
+        background-color: #ffd;
+        /* background-color: #cfc; */
+        overflow-y: scroll;
+        color: #000;
+        font-family: "Hiragino Sans GB", "Microsoft Yahei", sans-serif;
+        margin: 0.2em;
+    }
+
+    a:link {
+        color: inherit;
+    }
+
+    a {
+        color: inherit;
+    }
+
+    a:hover {
+        color: #f00 !important;
+    }
+
+    a:visited {
+        color: inherit;
+    }
+
+    #textArea,
+    #logArea {
+        font-family: "Hiragino Sans GB", "SimHei", sans-serif;
+        line-height: 1.5;
+        font-size: 100%;
+        height: 70vh;
+        padding: 0.3em;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    #logArea {
+        font-size: 70%;
+        background-color: #ddd;
+        line-height: 1;
+    }
+
+    #textWrap {
+        margin: 0 auto;
+    }
+
+    .writeBtn {
+        width: 45%;
+        height: 2em;
+        cursor: pointer;
+    }
+</style>
+
+<body>
+    <div style="text-align: center; line-height: 1.5; font-size: 80%;">
+        <p>AI智障写作 <a href="https://zhuanlan.zhihu.com/p/487278175" target="_blank">采用我的RWKV-v2-RNN模型，比GPT高效，点击看我知乎了解</a>
+            这是简化版，<a href="https://github.com/BlinkDL/AI-Writer" target="_blank">Github版更强</a> 请经常备份内容 <a
+                href="https://t.me/ai_writer" target="_blank">TG群</a> 请用Chrome写得最快 <span
+                style="color:blue; font-weight: bold;">电脑是智障，仅供娱乐，请遵守法律法规</span></p>
+    </div>
+    <div id="textWrap">
+        <div style="min-height:2em">
+            <div id="loading" style="color:blue; font-size: 120%; text-align: center;">
+                正在读取模型 <span id="loadprog"></span>，模型在 <a href="https://github.com/BlinkDL/AI-Writer"
+                    target="_blank">Github 外网</a>，请找方法加速。读取完就会有续写按钮。
+            </div>
+            <div id="writeBtns"
+                style="width: 100%; display: none; margin-bottom:0.5em; flex-direction:row; justify-content:space-evenly;">
+                <button class="writeBtn" onclick="sendText()">续写 (alt+Q)</button>
+                <button class="writeBtn" onclick="rewriteText()">换个写法 (alt+E)</button>
+                <select onchange="WRITE_EACH_LENGTH = parseInt(this.options[this.selectedIndex].text.split('写')[1])">
+                    <option>每次写30</option>
+                    <option>每次写50</option>
+                    <option>每次写75</option>
+                    <option>每次写100</option>
+                    <option>每次写200</option>
+                    <option>每次写300</option>
+                    <option selected>每次写500</option>
+                    <option>每次写1000</option>
+                    <option>每次写2000</option>
+                    <option>每次写3000</option>
+                    <option>每次写5000</option>
+                    <option>每次写9999</option>
+                </select>
+            </div>
+        </div>
+        <div style="display:flex; flex-direction:row; justify-content:space-evenly;">
+            <textarea id="textArea" style="flex: 2 1 0">金色</textarea>
+            <textarea id="logArea" style="flex: 1 1 0">请在左边写作。右边这里是暂存区域，会纪录每次的续写内容，供你参考。请定期清空这里，以免拖慢速度。</textarea>
+        </div>
+    </div>
+    <div style="margin:0 auto 10em auto; text-align:center;">
+        <div><span id="model_version"></span> 代码 20220410，解决了重复。注意写长仍会越写越差</div>
+        <div>如果喜欢，请支持项目😃（扫下面码）欢迎分享、合作。请看<a href="https://withablink.taobao.com/"
+                target="_blank">【我们淘宝店】</a>有优质高显色护眼LED灯</div>
+        <img style="max-width:50vw" src="https://mapp.alicdn.com/1648992731802nKnFWrIV085In7P.png">
+        <div style="line-height: 1.5;">
+            <div>请定期清空右边区域，以免拖慢速度。如果字体小，可放大网页。</div>
+            <div style="margin: 1em 0">使用创意开头：<select id="set_prompt"
+                    onchange="setPrompt(this.options[this.selectedIndex].text)">
+                    <option>请选择</option>
+                    <option>恐怖</option>
+                    <option>绝美</option>
+                    <option>暗黑</option>
+                    <option>银白</option>
+                    <option>金色</option>
+                    <option>血红</option>
+                    <option>翠绿</option>
+                    <option>罗马</option>
+                    <option>智能</option>
+                    <option>星舰</option>
+                    <option>魔法</option>
+                    <option>少女</option>
+                    <option>“道友</option>
+                    <option>“区区</option>
+                    <option>“恭喜</option>
+                    <option>十年</option>
+                    <option>一百年</option>
+                    <option>一千年</option>
+                    <option>神圣</option>
+                    <option>玄奥</option>
+                    <option>昏暗</option>
+                    <option>雪白</option>
+                    <option>蔚蓝</option>
+                    <option>狂暴</option>
+                    <option>魔神</option>
+                    <option>魔兽</option>
+                    <option>兽人</option>
+                    <option>夜色</option>
+                    <option>梦幻</option>
+                    <option>冰封</option>
+                    <option>传说</option>
+                    <option>远古</option>
+                    <option>上古</option>
+                    <option>灵脉</option>
+                    <option>灵气</option>
+                    <option>灵石</option>
+                    <option>真气</option>
+                    <option>魔力</option>
+                </select> 会将左边内容移到右边！
+            </div>
+            <div style="margin: 1em 0"><select
+                    onchange="TOP_P = parseFloat(this.options[this.selectedIndex].text.split('度')[1])">
+                    <option>随机度0</option>
+                    <option>随机度0.3</option>
+                    <option>随机度0.5</option>
+                    <option>随机度0.7</option>
+                    <option>随机度0.75</option>
+                    <option selected>(默认)随机度0.8</option>
+                    <option>随机度0.85</option>
+                    <option>随机度0.9</option>
+                    <option>随机度0.95</option>
+                    <option>随机度1</option>
+                </select> 随机度越高，内容越丰富但逻辑变差。</div>
+            <div>在Github有<a href="https://github.com/BlinkDL/AI-Writer" target="_blank">更强的模型</a>，以及<a
+                    href="https://github.com/BlinkDL/RWKV-LM" target="_blank">训练代码</a>，可训练自己的语料。不懂可以加<a
+                    href="https://t.me/ai_writer" target="_blank">TG群</a>。</div>
+        </div>
+        <div style="line-height: 2; text-align: left; margin:1em;">
+            FAQ：
+            <br>*)
+            为什么写长了会变差？答：因为这是6层512嵌入的迷你26M参数模型（所以电脑笨，但写得快）。建议每次只写几百字，<span
+                style="color:blue; font-weight: bold;">发现混乱文字时，必须删除混乱的内容再续写，否则越写越混乱。</span>在Github有12层768嵌入的标准模型，效果更好。小梦模型比这个大几百倍，模型越大，逻辑越好，训练耗资越高，所以欢迎大家支持项目，以炼更大的效果更好的模型（得炼几个月）。
+            <br>*) 是用什么训练？答：用pytorch训练，用tf.js部署。用了200G语料，80%是网文。
+            <br>*) 可以写刘备吗？答：可用Github代码自己训练。不懂可以加<a href="https://t.me/ai_writer"
+                target="_blank">TG群</a>。现在你能诱导它写擦边球（有时它自己也会写），不过，训练内容没H文，所以它不会开露骨的车。
+            <br>*) 为什么有时会冒出来“第xx章”？答：因为训练文本没去除章节标记，但它生成的xx章都是瞎编的，你找不到出处的。
+            <div style="line-height: 1.5;">
+                <br>模型原理（以Github的12层768嵌入模型为例）
+                <br>电脑的原理，是题海战术+笨鸟先飞。它把字变成很多数，然后，找这些数的数学（统计学）规律。
+                <br>
+                <br>电脑的学习目标：输入一堆字，预测下一个字。
+                <br>只要学会这个，就可以一个个字写下去。
+                <br>训练的小说有几万本，每次随机挑一段 512 个字输进去，让电脑猜下一个字，看是否能猜对。
+                <br>不断重复这个过程，不断考试。
+                <br>你可以自己玩这个游戏（遮住后文，猜下一个字），会发现，需要理解前文才能玩对。
+                <br>
+                <br>我的小模型，支持 8849 种字。每个字对应两组数，每组有 768 个数。
+                <br>例如："我" = 【0.123 -1.534 ...】，【-0.827 2.343 ...】，不妨称为【输入组】和【输出组】。
+                <br>大模型，每个字会对应几千几万个数。
+                <br>
+                <br>第一，编码。
+                <br>每个字根据它的【输入组】，变成 768 个数，每个数代表某种隐藏含义。
+                <br>举例，每个字的第A个数代表"好-坏"维度，第B个数代表"名词-非名词"维度，等等。
+                <br>实际找到的编码，不一定有容易描述的维度含义。
+                <br>因为具体的编码，是电脑自动去发现，无需人工干预。
+                <br>
+                <br>最初是随机编码。电脑会不断用【求导数】的方法计算，修改编码，改进预测结果。
+                <br>大致可以认为：如果电脑发现，把某个字的第某个数增加 0.001，可以改进预测结果，它就去做这个事。
+                <br>因为预测结果是否正确，是客观标准。所以它只要不断这里+0.001，那里-0.001，就慢慢接近目标。
+                <br>总之，输入 512 个字，会变成 512*768 = 393216 个数。
+                <br>
+                <br>第二，模型会把这 393216 个数经过一番运算（和另外几千万个数做运算，这几千万个数会根据前文不断调整），最终得到 768 个数。这个过程是最有趣的，稍后也可以解释。
+                <br>
+                <br>第三，将 768 个数，与 8849 种字的【输出组】比较，计算和每个字的接近程度，就是输出这个字的概率。
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    "use strict";
+    const gParam = {}
+
+    const n_layer = 6
+    const n_embd = 512
+    const ctx_len = 768
+    const vocab_size = 8849
+
+    var WRITE_EACH_LENGTH = 500
+    var TOP_P = 0.8
+
+    var weightName = [
+        'emb.weight',
+        'blocks.0.ln1.weight',
+        'blocks.0.ln1.bias',
+        'blocks.0.ln2.weight',
+        'blocks.0.ln2.bias',
+        'blocks.0.ffnPre.time_mix',
+        'blocks.0.ffnPre.key.weight',
+        'blocks.0.ffnPre.receptance.weight',
+        'blocks.0.ffnPre.value.weight',
+        'blocks.0.ffn.time_mix',
+        'blocks.0.ffn.key.weight',
+        'blocks.0.ffn.receptance.weight',
+        'blocks.0.ffn.value.weight',
+        'blocks.1.ln1.weight',
+        'blocks.1.ln1.bias',
+        'blocks.1.ln2.weight',
+        'blocks.1.ln2.bias',
+        'blocks.1.att.time_decay',
+        'blocks.1.att.time_first',
+        'blocks.1.att.time_mix',
+        'blocks.1.att.key.weight',
+        'blocks.1.att.value.weight',
+        'blocks.1.att.receptance.weight',
+        'blocks.1.att.output.weight',
+        'blocks.1.ffn.time_mix',
+        'blocks.1.ffn.key.weight',
+        'blocks.1.ffn.receptance.weight',
+        'blocks.1.ffn.value.weight',
+        'blocks.2.ln1.weight',
+        'blocks.2.ln1.bias',
+        'blocks.2.ln2.weight',
+        'blocks.2.ln2.bias',
+        'blocks.2.att.time_decay',
+        'blocks.2.att.time_first',
+        'blocks.2.att.time_mix',
+        'blocks.2.att.key.weight',
+        'blocks.2.att.value.weight',
+        'blocks.2.att.receptance.weight',
+        'blocks.2.att.output.weight',
+        'blocks.2.ffn.time_mix',
+        'blocks.2.ffn.key.weight',
+        'blocks.2.ffn.receptance.weight',
+        'blocks.2.ffn.value.weight',
+        'blocks.3.ln1.weight',
+        'blocks.3.ln1.bias',
+        'blocks.3.ln2.weight',
+        'blocks.3.ln2.bias',
+        'blocks.3.att.time_decay',
+        'blocks.3.att.time_first',
+        'blocks.3.att.time_mix',
+        'blocks.3.att.key.weight',
+        'blocks.3.att.value.weight',
+        'blocks.3.att.receptance.weight',
+        'blocks.3.att.output.weight',
+        'blocks.3.ffn.time_mix',
+        'blocks.3.ffn.key.weight',
+        'blocks.3.ffn.receptance.weight',
+        'blocks.3.ffn.value.weight',
+        'blocks.4.ln1.weight',
+        'blocks.4.ln1.bias',
+        'blocks.4.ln2.weight',
+        'blocks.4.ln2.bias',
+        'blocks.4.att.time_decay',
+        'blocks.4.att.time_first',
+        'blocks.4.att.time_mix',
+        'blocks.4.att.key.weight',
+        'blocks.4.att.value.weight',
+        'blocks.4.att.receptance.weight',
+        'blocks.4.att.output.weight',
+        'blocks.4.ffn.time_mix',
+        'blocks.4.ffn.key.weight',
+        'blocks.4.ffn.receptance.weight',
+        'blocks.4.ffn.value.weight',
+        'blocks.5.ln1.weight',
+        'blocks.5.ln1.bias',
+        'blocks.5.ln2.weight',
+        'blocks.5.ln2.bias',
+        'blocks.5.att.time_decay',
+        'blocks.5.att.time_first',
+        'blocks.5.att.time_mix',
+        'blocks.5.att.key.weight',
+        'blocks.5.att.value.weight',
+        'blocks.5.att.receptance.weight',
+        'blocks.5.att.output.weight',
+        'blocks.5.ffn.time_mix',
+        'blocks.5.ffn.key.weight',
+        'blocks.5.ffn.receptance.weight',
+        'blocks.5.ffn.value.weight',
+        'ln_out.weight',
+        'ln_out.bias',
+        'head.weight',
+        'head_q.weight',
+        'head_k.weight'
+    ]
+
+    var N_PARAMS = weightName.length
+    var LOADED_PARAMS = 0
+
+    // var MODEL_NAME = 'js_model'
+    var MODEL_NAME = '20220425'
+    document.getElementById("model_version").innerHTML = '模型 ' + MODEL_NAME
+
+    var request = new XMLHttpRequest()
+    var itos = {}
+    var stoi = {}
+    request.responseType = 'json';
+    request.open('GET', MODEL_NAME + "/word-utf8.json", true)
+    request.onload = function () {
+        itos = request.response
+        for (var key in itos) {
+            stoi[itos[key]] = parseInt(key)
+        }
+    }
+    request.send()
+
+    function loadWeight(wName) {
+        var request = new XMLHttpRequest()
+        request.open('GET', MODEL_NAME + "/" + wName + ".bin", true)
+        request.responseType = 'blob'
+        request.onload = function () {
+            var reader = new FileReader()
+            reader.readAsArrayBuffer(request.response)
+            reader.onload = function (e) {
+                var ww = tf.tensor(new Float32Array(reader.result))
+
+                if ((wName == 'emb.weight') || (wName.includes('head')))
+                    ww = ww.reshape([-1, n_embd])
+                else if (wName.endsWith('key.weight'))
+                    ww = ww.reshape([-1, n_embd])
+                else if (wName.endsWith('value.weight'))
+                    ww = ww.reshape([n_embd, -1])
+                else if (wName.endsWith('receptance.weight') || wName.endsWith('output.weight'))
+                    ww = ww.reshape([n_embd, n_embd])
+
+                var xx = wName.split('.')
+                var here = gParam
+                for (var i = 0; i < xx.length; i++) {
+                    if (xx[i] == parseInt(xx[i])) {
+                        var ii = parseInt(xx[i])
+                        if (!(ii in here))
+                            here[ii] = {}
+                        here = here[ii]
+                    } else {
+                        if (i == xx.length - 1)
+                            here[xx[i]] = ww
+                        else if (!(xx[i] in here)) {
+                            here[xx[i]] = {}
+                        }
+                        here = here[xx[i]]
+                    }
+                }
+                LOADED_PARAMS += 1
+                document.getElementById("loadprog").innerHTML = Math.round(LOADED_PARAMS / N_PARAMS * 100) + '%'
+                if (LOADED_PARAMS == N_PARAMS) {
+                    showBtn()
+                    // if (IS_FIRST_RUN)
+                    //     sendText()
+                }
+            }
+        }
+        request.send()
+    }
+
+    function hideBtn() {
+        document.getElementById("loading").style.display = "block"
+        document.getElementById("writeBtns").style.display = "none"
+        document.getElementById("set_prompt").disabled = true
+    }
+
+    function showBtn() {
+        document.getElementById("loading").style.display = "none"
+        document.getElementById("writeBtns").style.display = "flex"
+        document.getElementById("set_prompt").disabled = false
+    }
+
+    var ln_eps = null
+    var const_1 = null
+    var xxx = {}
+    var aaa = {}
+    var bbb = {}
+    var hhh = null
+
+    tf.ready().then(() => {
+        ln_eps = tf.tensor(1e-5)
+        const_1 = tf.ones([n_embd])
+        for (var i = 0; i < N_PARAMS; i++) {
+            loadWeight(weightName[i])
+        }
+    });
+
+    function LayerNorm(x, ln) {
+        var x_mean = x.mean()
+        var x1 = x.sub(x_mean)
+        var x_var = x1.square().mean()
+        var x_std = (x_var.add(ln_eps)).sqrt()
+        x = x1.div(x_std).mul(ln.weight).add(ln.bias)
+        return x
+    }
+
+    function FF(xx, w, name) {
+        if (!(name in xxx)) {
+            xxx[name] = tf.zeros([n_embd])
+        }
+        var x = xx.mul(w.time_mix).add(xxx[name].mul(const_1.sub(w.time_mix)))
+        xxx[name].dispose()
+        xxx[name] = tf.keep(xx)
+        x = x.expandDims(1)
+
+        var r = w.receptance.weight.matMul(x).sigmoid()
+        var k = w.key.weight.matMul(x).relu().square()
+        var kv = w.value.weight.matMul(k)
+        x = r.mul(kv).squeeze()
+
+        return x
+    }
+
+    function SA(xx, w, name) {
+        if (!(name in xxx)) {
+            xxx[name] = tf.zeros([n_embd])
+            aaa[name] = tf.zeros([n_embd])
+            bbb[name] = tf.zeros([n_embd])
+        }
+        var x = xx.mul(w.time_mix).add(xxx[name].mul(const_1.sub(w.time_mix)))
+        xxx[name].dispose()
+        xxx[name] = tf.keep(xx)
+        x = x.expandDims(1)
+
+        var r = w.receptance.weight.matMul(x).sigmoid().squeeze()
+        var k = w.key.weight.matMul(x).clipByValue(-999999, 60).exp().squeeze()
+        var v = w.value.weight.matMul(x).squeeze()
+        var kv = k.mul(v)
+
+        var a = aaa[name].add(w.time_first.mul(kv))
+        var b = bbb[name].add(w.time_first.mul(k))
+        var aa = aaa[name].clone()
+        var bb = bbb[name].clone()
+        aaa[name].dispose()
+        bbb[name].dispose()
+        aaa[name] = tf.keep(w.time_decay.mul(aa).add(kv))
+        bbb[name] = tf.keep(w.time_decay.mul(bb).add(k))
+
+        var rwkv = r.mul(a).div(b.add(1e-16)).expandDims(1)
+        rwkv = w.output.weight.matMul(rwkv).squeeze()
+
+        return rwkv
+    }
+
+    function clearStat() {
+        xxx = {}
+        aaa = {}
+        bbb = {}
+        hhh = null
+    }
+
+    function saveStat(out, name) {
+        name = name.slice(-ctx_len)
+        ctxBuf[name] = {}
+        var buf = ctxBuf[name]
+        buf.out = out.slice()
+        buf.xxx = {}
+        for (var x in xxx) {
+            buf.xxx[x] = tf.keep(xxx[x].clone())
+        }
+        buf.aaa = {}
+        for (var x in aaa) {
+            buf.aaa[x] = tf.keep(aaa[x].clone())
+        }
+        buf.bbb = {}
+        for (var x in bbb) {
+            buf.bbb[x] = tf.keep(bbb[x].clone())
+        }
+        buf.hhh = tf.keep(hhh.clone())
+    }
+
+    function loadStat(name) {
+        name = name.slice(-ctx_len)
+        var buf = ctxBuf[name]
+        for (var x in buf.xxx) {
+            xxx[x] = buf.xxx[x].clone()
+        }
+        for (var x in buf.aaa) {
+            aaa[x] = buf.aaa[x].clone()
+        }
+        for (var x in buf.bbb) {
+            bbb[x] = buf.bbb[x].clone()
+        }
+        hhh = buf.hhh.clone()
+        ctxNow = name
+        return buf.out.slice()
+    }
+
+    function addStat(ctx) {
+
+    }
+
+    function run(ctx) {
+        var x = tf.tidy(() => {
+            ctx = ctx.slice(-ctx_len)
+            var ctxStr = ''
+            for (var s of ctx)
+                ctxStr += itos[s]
+            ctxNow = ctxStr
+            // console.log('run', ctxStr)
+
+            var x = gParam.emb.weight.slice(ctx[ctx.length - 1], 1).squeeze()
+
+            x = LayerNorm(x, gParam.blocks[0].ln1)
+            x = x.add(FF(x, gParam.blocks[0].ffnPre, '0.ffnPre'))
+            x = LayerNorm(x, gParam.blocks[0].ln2)
+            x = x.add(FF(x, gParam.blocks[0].ffn, '0.ffn'))
+
+            for (var i = 1; i < 6; i++) {
+                x = LayerNorm(x, gParam.blocks[i].ln1)
+                x = x.add(SA(x, gParam.blocks[i].att, i + '.att'))
+                x = LayerNorm(x, gParam.blocks[i].ln2)
+                x = x.add(FF(x, gParam.blocks[i].ffn, i + '.ffn'))
+            }
+            x = LayerNorm(x, gParam.ln_out)
+
+            x = x.expandDims(1)
+            var hk = gParam.head_k.weight.matMul(x).squeeze().expandDims(0)
+            // console.log(itos[ctx[ctx.length - 1]], hk.dataSync()[0])
+            if (hhh === null) {
+                hhh = tf.keep(hk)
+            } else {
+                var hh = hhh.clone()
+                hhh.dispose()
+                if (hh.shape[0] >= ctx_len) {
+                    hhh = tf.keep(hh.slice(1, -1).concat(hk))
+                } else {
+                    hhh = tf.keep(hh.concat(hk))
+                }
+            }
+
+            var q = gParam.head_q.weight.matMul(x)
+            var c = hhh.matMul(q).div(256).dataSync()
+
+            x = gParam.head.weight.matMul(x)
+            x = x.dataSync()
+
+            // console.log(ctxNow, ctx.length, c.length)
+            for (var i = 0; i < ctx.length; i++) {
+                x[ctx[i]] += c[i]
+                // console.log(i, itos[ctx[i]], hhh.slice(i, 1).dataSync()[0])
+            }
+
+            return x
+        })
+        // console.log(x)
+        // console.log(c)
+        // console.log(tf.memory())
+        return x
+    }
+
+    var ctx = [1]
+    var ctxBuf = {}
+    var ctxNow = ''
+    var gWriteShallStop = false
+
+    function asyncWriteOne(iter = 0) {
+        if (iter < WRITE_EACH_LENGTH) {
+            document.getElementById("loading").innerHTML = '正在写 ' + (iter + 1) + '/' + WRITE_EACH_LENGTH + ' 字，随机度 ' + TOP_P + ' <button onmousedown="gWriteShallStop=true">【停止】</button>'
+            setTimeout(() => {
+
+                var ctxStr = ''
+                for (var s of ctx)
+                    ctxStr += itos[s]
+
+                var out
+                if (ctxStr in ctxBuf) {
+                    // console.log('find', ctxStr)
+                    out = loadStat(ctxStr)
+                } else {
+                    out = run(ctx)
+                    if ((iter == WRITE_EACH_LENGTH - 1) || (gWriteShallStop))
+                        saveStat(out, ctxStr)
+                }
+
+                var reg = new RegExp("[\\u4E00-\\u9FFF]+", "g");
+                var count = {}
+                var extra = {}
+                for (var j = ctx.length - 1; j >= 0; j--) {
+                    var dist = ctx.length - j
+                    var cj = ctx[j]
+                    var cc = itos[cj]
+                    if (cj in count)
+                        count[cj] += 1
+                    else {
+                        count[cj] = 1
+                        extra[cj] = 0
+                    }
+                    extra[cj] += Math.max(0, count[cj] - 1 - dist * (reg.test(cc) ? 0.01 : 0.05))
+                }
+                for (var j in extra) {
+                    out[j] -= Math.pow(extra[j], 1)
+                }
+
+                var indexed = Array.from(Array(out.length).keys()).sort((a, b) => out[a] > out[b] ? -1 : (out[b] > out[a]) | 0)
+
+                // var result = indexed[0]
+
+                var sum_exp = 0
+                for (var i = 0; i < out.length; i++) {
+                    out[i] = Math.exp(out[i])
+                    sum_exp += out[i]
+                }
+
+                var ran = Math.random() * TOP_P
+                var i = 0
+                while (true) {
+                    // console.log(ran, i, out[indexed[i]] / sum_exp)
+                    ran -= out[indexed[i]] / sum_exp
+                    if (ran > 0)
+                        i += 1
+                    else
+                        break
+                }
+                var result = indexed[i]
+
+                addText(itos[result])
+                ctx.push(result)
+
+                if (!gWriteShallStop)
+                    asyncWriteOne(iter + 1);
+                else {
+                    localStorage.setItem('txt_stored', textArea.value);
+                    localStorage.setItem('log_stored', logArea.value);
+                    showBtn()
+                }
+            }, 0);
+        } else {
+            localStorage.setItem('txt_stored', textArea.value);
+            localStorage.setItem('log_stored', logArea.value);
+            showBtn()
+        }
+    }
+
+    var ANALYZE_LENGTH = 0
+
+    function asyncAnalyze(iter = 1, callback) {
+        if ((iter < ANALYZE_LENGTH) && (!gWriteShallStop)) {
+            setTimeout(() => {
+                var ccc = ctx.slice(0, iter)
+
+                var ctxStr = ''
+                for (var s of ccc)
+                    ctxStr += itos[s]
+
+                if (ctxStr in ctxBuf) {
+                    // console.log('find', ctxStr)
+                    loadStat(ctxStr)
+                } else {
+                    // console.log('ANALYZE', ctxStr)
+                    var out = run(ccc)
+                    if (iter == ANALYZE_LENGTH - 1)
+                        saveStat(out, ctxStr)
+                }
+                document.getElementById("loading").innerHTML = '正在分析最后 ' + iter + '/' + ANALYZE_LENGTH + ' 字（这步待优化，以后会提速10倍）' + ' <button onmousedown="gWriteShallStop=true">【停止】</button>'
+                asyncAnalyze(iter + 1, callback);
+            }, 0);
+        } else {
+            callback()
+        }
+    }
+
+    async function write(rawCtx) {
+        if (LOADED_PARAMS == N_PARAMS) {
+            clearStat()
+            hideBtn()
+            gWriteShallStop = false
+            document.getElementById("loading").innerHTML = '正在续写...'
+            var logArea = document.getElementById("logArea")
+            logArea.value += '\n\n'
+            var context = ''
+
+            if (rawCtx == '') {
+                context = '\n'
+            } else {
+                var endsNewLine = false
+                var rr = rawCtx.split('\n')
+                if (rr[rr.length - 1].trim() == '')
+                    endsNewLine = true
+
+                rawCtx = rawCtx.trim()
+                rawCtx = rawCtx.replaceAll('\r\n', '\n').replaceAll('　', ' ')
+                rawCtx = rawCtx.split('\n')
+                for (var i = 0; i < rawCtx.length; i++) {
+                    var ss = rawCtx[i].trim()
+                    if (ss.length > 0)
+                        context += '\n' + ss
+                }
+                if (endsNewLine)
+                    context = context + '\n'
+            }
+            var context_shifted = context.slice(-ctx_len - 1, -1)
+            context = context.slice(-ctx_len)
+            // console.log(context)
+            ctx = Array.prototype.map.call(context, x => {
+                if (x in stoi)
+                    return stoi[x];
+                else {
+                    return -1;
+                }
+            })
+            var badindex = ctx.indexOf(-1)
+            if (badindex >= 0) {
+                document.getElementById("loading").innerHTML = '内容有不规范字符 [' + context[badindex] + ']，请使用简体和半角英文数字。'
+                setTimeout(() => {
+                    showBtn()
+                }, 1000)
+                return
+            }
+
+            // console.log(context, context_shifted, JSON.stringify(Object.keys(ctxBuf)))
+            if (context.slice(-ctx_len) in ctxBuf) {
+                // console.log('find', context)
+                loadStat(context)
+                asyncWriteOne()
+            } else if (context_shifted in ctxBuf) {
+                // console.log('find-shifted', context_shifted, 'ctx', context, ctx)
+                loadStat(context_shifted)
+                asyncWriteOne()
+            } else {
+                ANALYZE_LENGTH = ctx.length
+                asyncAnalyze(1, asyncWriteOne)
+            }
+        }
+    }
+
+    //=================================================================================================
+
+    var textArea = document.getElementById("textArea")
+    var logArea = document.getElementById("logArea")
+
+    var IS_FIRST_RUN = false
+
+    let txt_stored = localStorage.getItem('txt_stored');
+    if (txt_stored) {
+        textArea.value = txt_stored
+    } else {
+        IS_FIRST_RUN = true
+    }
+
+    let log_stored = localStorage.getItem('log_stored');
+    if (log_stored)
+        logArea.value = log_stored
+
+    let lastGeneratePosition = -1
+    textArea.scrollTop = textArea.scrollHeight;
+    logArea.scrollTop = logArea.scrollHeight;
+
+    function addText(d) {
+        textArea.value += d
+        textArea.scrollTop = textArea.scrollHeight;
+
+        logArea.value += d
+        logArea.scrollTop = logArea.scrollHeight;
+    }
+
+    textArea.onchange = function (e) {
+        localStorage.setItem('txt_stored', textArea.value);
+    }
+    textArea.oninput = function (e) {
+        localStorage.setItem('txt_stored', textArea.value);
+    }
+    logArea.onchange = function (e) {
+        localStorage.setItem('log_stored', logArea.value);
+    }
+    logArea.oninput = function (e) {
+        localStorage.setItem('log_stored', logArea.value);
+    }
+
+    function sendText() {
+        if (document.getElementById("loading").style.display != "none")
+            return
+        let txt = document.getElementById("textArea").value
+        lastGeneratePosition = txt.length
+        // let msg = txt.substr(Math.max(0, txt.length - 767))
+        // console.log(msg)
+        write(txt)
+    }
+
+    function rewriteText() {
+        let txt = document.getElementById("textArea").value
+        if (lastGeneratePosition == -1) {
+            if (txt.length == 0)
+                lastGeneratePosition = 0
+        }
+        if (lastGeneratePosition != -1) {
+            txt = txt.substr(0, lastGeneratePosition)
+            document.getElementById("textArea").value = txt
+        }
+        sendText()
+    }
+
+    function setPrompt(pp) {
+        if (pp.includes('选择'))
+            return
+        document.getElementById("set_prompt").selectedIndex = 0
+        logArea.value += '\n\n' + textArea.value
+        logArea.scrollTop = logArea.scrollHeight
+        textArea.value = pp
+        window.scrollTo(0, 0)
+        sendText()
+    }
+
+    document.onkeydown = function (event) {
+        if (event.altKey) {
+            if (event.keyCode === 81) {
+                sendText()
+                return false
+            }
+            if (event.keyCode === 69) {
+                rewriteText()
+                return false
+            }
+        }
+    }
+</script>
+
+</html>
