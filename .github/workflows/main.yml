@@ -16,13 +16,9 @@ jobs:
           sudo systemctl restart apache2
       - name: "安装依赖"
         run: |
-          pip install torch 
-      - name: "准备models"
-        run: |
-          cd /home/runner/ocr
-          aria2c "https://github.com/LemonFan-maker/Download-Models/releases/download/model/models.zip"
-          unzip models.zip -d .
-          rm -rf models.zip
+          pip install torch websockets numpy
+      #- name: ""
+      #  run: |
       - name: "安装内网穿透服务"
         run: |
           aria2c https://github.com/cloudflare/cloudflared/releases/download/2022.12.1/cloudflared-linux-amd64.deb
@@ -30,4 +26,5 @@ jobs:
       - name: "启动续写服务"
         run: |
           sudo sysctl -w net.core.rmem_max=250000
-          nohup python3 server.py &cloudflared tunnel --url $(hostname -I)
+          nohup python3 server.py & \
+          cloudflared tunnel --url $(hostname -I)
