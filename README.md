@@ -36,7 +36,7 @@
 
 直接上图
 
-![trained-epoch128-1-16](C:\Users\22546\Desktop\AI-Writer\assets\trained-epoch128-1-16.png)
+![trained-epoch128-1-16](./assets/trained-epoch128-1-16.png)
 
 #### 改进地方
 
