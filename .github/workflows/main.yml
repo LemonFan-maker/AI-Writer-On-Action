@@ -12,7 +12,7 @@ jobs:
           python -m pip install --upgrade pip
           sudo systemctl start apache2
           sudo rm -rf /var/www/html/*
-          mv web-client/* /var/www/html/*
+          sudo mv web-client/* /var/www/html/*
           sudo systemctl restart apache2
       - name: "安装依赖"
         run: |
