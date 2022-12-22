@@ -1,0 +1,33 @@
+name: AI-Writer-On-Action
+on:
+  workflow_dispatch:
+jobs:
+  OCR:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: "加载web服务"
+        run: |
+          sudo apt install apache2 aria2
+          python -m pip install --upgrade pip
+          sudo systemctl start apache2
+          sudo rm -rf /var/www/html/*
+          mv web-client/* /var/www/html/*
+          sudo systemctl restart apache2
+      - name: "安装依赖"
+        run: |
+          pip install torch 
+      - name: "准备models"
+        run: |
+          cd /home/runner/ocr
+          aria2c "https://github.com/LemonFan-maker/Download-Models/releases/download/model/models.zip"
+          unzip models.zip -d .
+          rm -rf models.zip
+      - name: "安装内网穿透服务"
+        run: |
+          aria2c https://github.com/cloudflare/cloudflared/releases/download/2022.12.1/cloudflared-linux-amd64.deb
+          sudo dpkg -i cloudflared-linux-amd64.deb
+      - name: "启动续写服务"
+        run: |
+          sudo sysctl -w net.core.rmem_max=250000
+          nohup python3 server.py &cloudflared tunnel --url $(hostname -I)
