@@ -2,7 +2,7 @@ name: AI-Writer-On-Action
 on:
   workflow_dispatch:
 jobs:
-  OCR:
+  writer:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
