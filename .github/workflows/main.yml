@@ -3,28 +3,27 @@ on:
   workflow_dispatch:
 jobs:
   OCR:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
-      - name: "加载web服务"
+      - name: "准备conda环境"
         run: |
-          sudo apt install apache2 aria2
-          python -m pip install --upgrade pip
-          sudo systemctl start apache2
-          sudo rm -rf /var/www/html/*
-          sudo mv web-client/* /var/www/html/*
-          sudo systemctl restart apache2
+          sudo rm -rf /usr/bin/conda
+          export PATH="/usr/share/miniconda/bin:$PATH"
+          conda create -n writer python=3.8.13 pip pandas=1.5.1 numpy=1.23.4
       - name: "安装依赖"
         run: |
-          pip install torch websockets numpy
-      #- name: ""
-      #  run: |
+          export PATH="/usr/share/miniconda/bin:$PATH"
+          source activate writer
+          pip install -r requirements.txt
       - name: "安装内网穿透服务"
         run: |
           aria2c https://github.com/cloudflare/cloudflared/releases/download/2022.12.1/cloudflared-linux-amd64.deb
           sudo dpkg -i cloudflared-linux-amd64.deb
       - name: "启动续写服务"
         run: |
+          export PATH="/usr/share/miniconda/bin:$PATH"
+          source activate writer
           sudo sysctl -w net.core.rmem_max=250000
-          nohup python3 server.py & \
+          nohup streamlit run webui.py & \
           cloudflared tunnel --url $(hostname -I)
