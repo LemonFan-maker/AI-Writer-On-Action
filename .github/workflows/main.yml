@@ -29,6 +29,7 @@ jobs:
           pip install -r requirements.txt
       - name: "安装 GitHub 监控平台"
         run: |
+          sudo swapoff -a
           sudo sysctl -w net.core.rmem_max=2500000
           sudo apt-get install netdata -y &>/dev/null && echo "监测平台安装成功." || echo "安装失败，请检查网络连接或更新apt cache"
           sudo netdata -d -i 127.0.0.1 -p 8089
