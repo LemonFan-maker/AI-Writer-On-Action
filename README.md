@@ -5,7 +5,7 @@
 https://github.com/pass-lin/misaka-writer-V2
 
 # 遵守协议
-[](./LICENSE)
+[MIT LICENSE](./LICENSE)
 
 # 食用方法
 
