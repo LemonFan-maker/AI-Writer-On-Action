@@ -13,44 +13,6 @@ https://github.com/pass-lin/misaka-writer-V2
 **注意:**
 1. 续写字数(默认为512)不宜超过500字/每次，如果每次续写超过500字，请降低生成数量(默认为3)，否则要么OOM，要么断线。
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # 大佬仓库的README.md
 
 # misaka-writer-V2
@@ -130,7 +92,7 @@ streamlit run webui.py
 
 训练语料有 100G 中文：
 
-> 链接：https://pan.baidu.com/s/1WCiPA_tplI0AhdpDEuQ5ig <br/>
+> 链接：https://pan.baidu.com/s/1WCiPA_tplI0AhdpDEuQ5ig <br/>**(目前已失效)**
 > 提取码：rlse
 
 ## 预训练权重
