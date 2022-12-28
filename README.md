@@ -92,7 +92,7 @@ streamlit run webui.py
 
 训练语料有 100G 中文：
 
-> 链接：https://pan.baidu.com/s/1WCiPA_tplI0AhdpDEuQ5ig <br/>**(目前已失效)**
+> 链接：https://pan.baidu.com/s/1WCiPA_tplI0AhdpDEuQ5ig **(目前已失效)**<br/>
 > 提取码：rlse
 
 ## 预训练权重
