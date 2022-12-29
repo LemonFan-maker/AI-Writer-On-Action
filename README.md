@@ -56,6 +56,8 @@ Allocation of 30466560 exceeds 10% of free system memory.
 
 ### 使用 conda 配置
 
+*插一句,*很奇怪，tensorflow-cpu竟然不支持aarch64!可恶！！
+
 对于 tensorflow 2.2.0：
 
 ```sh
