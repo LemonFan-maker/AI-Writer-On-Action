@@ -20,11 +20,6 @@ Allocation of 30466560 exceeds 10% of free system memory.
 ```
 证明服务停止，请重启服务
 
-# Next Stage
-
-2022-12-30
-**计划**用PyQt写一个本地端，实现"服务器-->网页-->本地"的~~没啥用~~操作。
-
 # 大佬仓库的README.md
 
 # misaka-writer-V2
