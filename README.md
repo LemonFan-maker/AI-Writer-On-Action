@@ -18,7 +18,9 @@ https://github.com/pass-lin/misaka-writer-V2
 
 1. 续写字数(默认为512)不宜超过500字/每次，如果每次续写超过500字，请降低生成数量(默认为3)，否则OOM或者断线。
 
-2. 出现
+2. 请不要随意切换模型，要切换模型请重启action服务
+
+3. 出现
 ```sh
 Allocation of 30466560 exceeds 10% of free system memory.
 ```
