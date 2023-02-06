@@ -1,5 +1,8 @@
 <h1 align="center">在 GitHub Action 上部署人工智障续写服务</h1>
 
+*开放Colab快速生成(GPU确实挺快的)*[![Open In Colab](https://colab.research.google.com/drive/1yxfHcTw7nYSFxGZ-mg-Q2WEzCAg5UfHC?usp=sharing)
+
+
 # 大佬仓库
 
 https://github.com/pass-lin/misaka-writer-V2
