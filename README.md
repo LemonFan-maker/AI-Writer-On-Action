@@ -2,7 +2,7 @@
 
 *开放Colab快速生成(GPU确实挺快的)* [![Colab](https://img.shields.io/static/v1?label=Demo&message=Colab&color=orange)](https://colab.research.google.com/drive/1yxfHcTw7nYSFxGZ-mg-Q2WEzCAg5UfHC?usp=sharing)
 
-*开放Kaggle白嫖GPU* [![Kaggle](https://img.shields.io/static/v1?label=Demo&message=Colab&color=blue)](https://www.kaggle.com/code/lemonfan/novel-writer-on-kaggle)
+*开放Kaggle白嫖GPU* [![Kaggle](https://img.shields.io/static/v1?label=Demo&message=Kaggle&color=blue)](https://www.kaggle.com/code/lemonfan/novel-writer-on-kaggle)
 
 # 大佬仓库
 
